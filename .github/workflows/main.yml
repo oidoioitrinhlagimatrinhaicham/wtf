@@ -21,16 +21,6 @@ jobs:
           reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultUserName /t REG_SZ /d "admin" /f
           reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultPassword /t REG_SZ /d "Rdp2025!" /f
 
-      - name: Setup 6 Android Emulators
-        run: |
-          iwr https://dl.google.com/android/repository/commandlinetools-win-9477386_latest.zip -OutFile a.zip
-          Expand-Archive a.zip -Force
-          ./cmdline-tools/bin/sdkmanager.bat --sdk_root=$env:ANDROID_HOME "platform-tools" "emulator" "platforms;android-34" "system-images;android-34;google_apis_playstore;x86_64"
-          1..6 | % {
-            echo "no" | ./cmdline-tools/bin/avdmanager.bat create avd -n farm$_ -k "system-images;android-34;google_apis_playstore;x86_64" --force
-            Start-Process "$env:ANDROID_HOME\emulator\emulator.exe" -ArgumentList "-avd farm$_ -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save" -WindowStyle Hidden
-          }
-
       - name: Auto Rearm 180-day
         run: schtasks /create /sc onstart /tn "Rearm" /tr "cscript //nologo slmgr.vbs /rearm" /ru SYSTEM /f
 
