@@ -21,11 +21,6 @@ jobs:
           reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultUserName /t REG_SZ /d "admin" /f
           reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultPassword /t REG_SZ /d "Rdp2025!" /f
 
-      - name: Enable Nested Virtualization
-        run: |
-          Install-WindowsFeature -Name Hyper-V -IncludeManagementTools -Restart:$false
-          Set-VMProcessor -VMName * -ExposeVirtualizationExtensions $true -ErrorAction SilentlyContinue
-
       - name: Setup 6 Android Emulators
         run: |
           iwr https://dl.google.com/android/repository/commandlinetools-win-9477386_latest.zip -OutFile a.zip
