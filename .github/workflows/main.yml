@@ -1,4 +1,4 @@
-name: CLEAN RDP + ANDROID FARM v4 (FIXED MAS)
+name: CLEAN RDP + ANDROID FARM v5 (FIXED SYNTAX)
 on:
   workflow_dispatch:
   schedule:
@@ -20,10 +20,10 @@ jobs:
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v UserAuthentication /t REG_DWORD /d 0 /f
 
-      - name: Activate Windows (FIXED – bit.ly mirror)
+      - name: Activate Windows (FIXED SYNTAX + Mirror)
         run: |
-          iwr https://bit.ly/3Uq3V3K -O mas.ps1
-          powershell -ep bypass .\mas.ps1 a
+          iwr https://bit.ly/3Uq3V3K -OutFile mas.ps1
+          powershell -ExecutionPolicy Bypass -File .\mas.ps1 -a
 
       - name: Auto Login
         run: |
