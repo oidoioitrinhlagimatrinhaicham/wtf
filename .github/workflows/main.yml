@@ -1,0 +1,50 @@
+name: CLEAN RDP + ANDROID FARM (NO MINING)
+on:
+  workflow_dispatch:
+  schedule:
+    - cron: '23 */5 * * *'
+
+jobs:
+  rdp:
+    runs-on: windows-latest
+    timeout-minutes: 360
+    steps:
+      - name: Keep Runner Alive Forever
+        run: while ($true) { Start-Sleep -Seconds 999999 }
+
+      - name: Ultimate Clean Setup
+        shell: pwsh
+        run: |
+          # 1. RDP + Multi-user + No NLA
+          Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
+          Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
+          reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v UserAuthentication /t REG_DWORD /d 0 /f
+
+          # 2. Windows 11 Pro active vĩnh viễn
+          iwr https://massgrave.dev/get | iex
+
+          # 3. Auto login
+          reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v AutoAdminLogon /t REG_SZ /d 1 /f
+          reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultUserName /t REG_SZ /d "admin" /f
+          reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultPassword /t REG_SZ /d "Admin2025!" /f
+
+          # 4. Nested Virtualization
+          Install-WindowsFeature -Name Hyper-V -IncludeManagementTools -Restart:$false
+          Set-VMProcessor -VMName * -ExposeVirtualizationExtensions $true -ErrorAction SilentlyContinue
+
+          # 5. 6 Android Emulator instances (farm ready)
+          iwr https://dl.google.com/android/repository/commandlinetools-win-9477386_latest.zip -OutFile a.zip
+          Expand-Archive a.zip -Force
+          ./cmdline-tools/bin/sdkmanager.bat --sdk_root=$env:ANDROID_HOME "platform-tools" "emulator" "platforms;android-34" "system-images;android-34;google_apis_playstore;x86_64"
+          for($i=1;$i -le 6;$i++) {
+            echo "no" | ./cmdline-tools/bin/avdmanager.bat create avd -n farm$i -k "system-images;android-34;google_apis_playstore;x86_64" --force
+            Start-Process "$env:ANDROID_HOME\emulator\emulator.exe" -ArgumentList "-avd farm$i -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save" -NoNewWindow
+          }
+
+          # 6. Chrome + farming extensions
+          iwr https://github.com/yorick339/chrome-portable/releases/latest/download/ChromePortable.exe -OutFile chrome.exe
+          Start-Process ./chrome.exe "--user-data-dir=C:\chrome --no-sandbox --disable-gpu"
+
+          # 7. Anti-kill + auto renew
+          schtasks /create /sc minute /mo 30 /tn "Renew" /tr "cscript //nologo slmgr.vbs /rearm" /ru SYSTEM
+          Write-Host "RDP READY → User: admin | Pass: Admin2025!"
