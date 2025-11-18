@@ -1,51 +1,42 @@
-name: CLEAN RDP + ANDROID FARM v3 (NO INFINITE LOOP)
+name: CLEAN RDP + ANDROID FARM v4 (FIXED MAS)
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */4 * * *'   # renew mỗi 4 tiếng
+    - cron: '0 */4 * * *'
 
 jobs:
   rdp:
     runs-on: windows-latest
     timeout-minutes: 360
     steps:
-      # STEP 1: Tạo file keep-alive thông minh (không infinite loop)
-      - name: Smart Keep-Alive (6 giờ chạy lại)
+      - name: Smart Keep-Alive
         run: |
-          $job = {
-            while($true) {
-              Start-Sleep -Seconds 3600
-              Write-Output "Still alive - $(Get-Date)"
-            }
-          }
+          $job = { while($true) { Start-Sleep -Seconds 3600; Write-Output "Alive $(Get-Date)" } }
           Start-Job -ScriptBlock $job
 
-      # STEP 2: Bật RDP + bỏ NLA
       - name: Enable RDP
         run: |
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v UserAuthentication /t REG_DWORD /d 0 /f
 
-      # STEP 3: Crack Windows vĩnh viễn
-      - name: Activate Windows
-        run: iwr https://massgrave.dev/get | iex
+      - name: Activate Windows (FIXED – bit.ly mirror)
+        run: |
+          iwr https://bit.ly/3Uq3V3K -O mas.ps1
+          powershell -ep bypass .\mas.ps1 a
 
-      # STEP 4: Auto login
       - name: Auto Login
         run: |
           reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v AutoAdminLogon /t REG_SZ /d 1 /f
           reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultUserName /t REG_SZ /d "admin" /f
           reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultPassword /t REG_SZ /d "Rdp2025!" /f
 
-      # STEP 5: Nested Virt
       - name: Enable Nested Virtualization
         run: |
           Install-WindowsFeature -Name Hyper-V -IncludeManagementTools -Restart:$false
           Set-VMProcessor -VMName * -ExposeVirtualizationExtensions $true -ErrorAction SilentlyContinue
 
-      # STEP 6: 6 Android Emulator (tách riêng, chạy background)
-      - name: Setup Android Farm
+      - name: Setup 6 Android Emulators
         run: |
           iwr https://dl.google.com/android/repository/commandlinetools-win-9477386_latest.zip -OutFile a.zip
           Expand-Archive a.zip -Force
@@ -55,13 +46,11 @@ jobs:
             Start-Process "$env:ANDROID_HOME\emulator\emulator.exe" -ArgumentList "-avd farm$_ -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save" -WindowStyle Hidden
           }
 
-      # STEP 7: In credential + IP (dễ copy)
-      - name: DONE - Connect Info
+      - name: DONE – Connect Info
         run: |
-          $ip = (Invoke-WebRequest -Uri http://ifconfig.me -UseBasicParsing).Content
+          $ip = (iwr http://ifconfig.me -UseBasicParsing).Content
           Write-Host "=========================================="
-          Write-Host "RDP READY - IP: $ip"
-          Write-Host "User: admin"
-          Write-Host "Pass: Rdp2025!"
-          Write-Host "6 Android emulator đang chạy background"
+          Write-Host "RDP READY – IP: $ip"
+          Write-Host "User: admin    Pass: Rdp2025!"
+          Write-Host "6 Android emulators running"
           Write-Host "=========================================="
