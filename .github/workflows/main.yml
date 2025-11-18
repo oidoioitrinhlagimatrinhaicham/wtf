@@ -1,4 +1,4 @@
-name: RDP
+name: CLEAN RDP + ANDROID FARM v7 (KEEP-ALIVE LAST)
 on:
   workflow_dispatch:
   schedule:
@@ -9,11 +9,6 @@ jobs:
     runs-on: windows-latest
     timeout-minutes: 360
     steps:
-      - name: Smart Keep-Alive
-        run: |
-          $job = { while($true) { Start-Sleep -Seconds 3600; Write-Output "Alive $(Get-Date)" } }
-          Start-Job -ScriptBlock $job
-
       - name: Enable RDP + No NLA
         run: |
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
@@ -41,16 +36,17 @@ jobs:
             Start-Process "$env:ANDROID_HOME\emulator\emulator.exe" -ArgumentList "-avd farm$_ -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save" -WindowStyle Hidden
           }
 
-      - name: Auto Rearm 180-day (keep Evaluation forever)
-        run: |
-          schtasks /create /sc onstart /tn "Rearm" /tr "cscript //nologo slmgr.vbs /rearm" /ru SYSTEM /f
+      - name: Auto Rearm 180-day
+        run: schtasks /create /sc onstart /tn "Rearm" /tr "cscript //nologo slmgr.vbs /rearm" /ru SYSTEM /f
 
       - name: DONE – Connect Info
         run: |
           $ip = (iwr http://ifconfig.me -UseBasicParsing).Content
-          Write-Host "=========================================="
-          Write-Host "RDP READY – IP: $ip"
-          Write-Host "User: admin    Pass: Rdp2025!"
-          Write-Host "Windows Evaluation 180 days (auto rearm)"
-          Write-Host "6 Android emulators running"
-          Write-Host "=========================================="
+          Write-Host "RDP READY – IP: $ip  |  User: admin  |  Pass: Rdp2025!"
+
+      # KEEP-ALIVE ĐẶT CUỐI CÙNG – SIÊU BỀN
+      - name: Smart Keep-Alive Forever (Last Step)
+        run: |
+          $job = { while($true) { Start-Sleep -Seconds 3600; Write-Output "Still alive $(Get-Date)" } }
+          Start-Job -ScriptBlock $job
+          Write-Host "Keep-Alive job started in background – runner will live forever"
