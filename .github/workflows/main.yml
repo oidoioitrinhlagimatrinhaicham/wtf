@@ -1,4 +1,4 @@
-name: CLEAN RDP + ANDROID FARM v5 (FIXED SYNTAX)
+name: RDP
 on:
   workflow_dispatch:
   schedule:
@@ -14,16 +14,11 @@ jobs:
           $job = { while($true) { Start-Sleep -Seconds 3600; Write-Output "Alive $(Get-Date)" } }
           Start-Job -ScriptBlock $job
 
-      - name: Enable RDP
+      - name: Enable RDP + No NLA
         run: |
           Set-ItemProperty -Path 'HKLM:\System\CurrentControlSet\Control\Terminal Server' -Name "fDenyTSConnections" -Value 0
           Enable-NetFirewallRule -DisplayGroup "Remote Desktop"
           reg add "HKLM\SYSTEM\CurrentControlSet\Control\Terminal Server\WinStations\RDP-Tcp" /v UserAuthentication /t REG_DWORD /d 0 /f
-
-      - name: Activate Windows (FIXED SYNTAX + Mirror)
-        run: |
-          iwr https://bit.ly/3Uq3V3K -OutFile mas.ps1
-          powershell -ExecutionPolicy Bypass -File .\mas.ps1 -a
 
       - name: Auto Login
         run: |
@@ -46,11 +41,16 @@ jobs:
             Start-Process "$env:ANDROID_HOME\emulator\emulator.exe" -ArgumentList "-avd farm$_ -no-audio -no-boot-anim -gpu swiftshader_indirect -no-snapshot-save" -WindowStyle Hidden
           }
 
+      - name: Auto Rearm 180-day (keep Evaluation forever)
+        run: |
+          schtasks /create /sc onstart /tn "Rearm" /tr "cscript //nologo slmgr.vbs /rearm" /ru SYSTEM /f
+
       - name: DONE – Connect Info
         run: |
           $ip = (iwr http://ifconfig.me -UseBasicParsing).Content
           Write-Host "=========================================="
           Write-Host "RDP READY – IP: $ip"
           Write-Host "User: admin    Pass: Rdp2025!"
+          Write-Host "Windows Evaluation 180 days (auto rearm)"
           Write-Host "6 Android emulators running"
           Write-Host "=========================================="
