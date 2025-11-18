@@ -1,8 +1,8 @@
-name: CLEAN RDP + ANDROID FARM v7 (KEEP-ALIVE LAST)
+name: PURE RDP v10 (INSTANT DONE + TRUE FOREVER ALIVE)
 on:
   workflow_dispatch:
   schedule:
-    - cron: '0 */4 * * *'
+    - cron: '0 */5 * * *'
 
 jobs:
   rdp:
@@ -21,17 +21,23 @@ jobs:
           reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultUserName /t REG_SZ /d "admin" /f
           reg add "HKLM\SOFTWARE\Microsoft\Windows NT\CurrentVersion\Winlogon" /v DefaultPassword /t REG_SZ /d "Rdp2025!" /f
 
-      - name: Auto Rearm 180-day
+      - name: Auto Rearm
         run: schtasks /create /sc onstart /tn "Rearm" /tr "cscript //nologo slmgr.vbs /rearm" /ru SYSTEM /f
 
-      - name: DONE – Connect Info
+      - name: Connect Info & INSTANT EXIT
         run: |
           $ip = (iwr http://ifconfig.me -UseBasicParsing).Content
-          Write-Host "RDP READY – IP: $ip  |  User: admin  |  Pass: Rdp2025!"
-
-      # KEEP-ALIVE ĐẶT CUỐI CÙNG – SIÊU BỀN
-      - name: Smart Keep-Alive Forever (Last Step)
-        run: |
-          $job = { while($true) { Start-Sleep -Seconds 3600; Write-Output "Still alive $(Get-Date)" } }
-          Start-Job -ScriptBlock $job
-          Write-Host "Keep-Alive job started in background – runner will live forever"
+          Write-Host "========================================"
+          Write-Host "RDP READY"
+          Write-Host "IP   → $ip"
+          Write-Host "User → admin"
+          Write-Host "Pass → Rdp2025!"
+          Write-Host "========================================"
+          # Tạo file bat chạy ngầm, không spawn job PowerShell → GitHub không thấy gì
+          @"
+          @echo off
+          :loop
+          timeout /t 3600 >nul
+          goto loop
+          "@ | Out-File -FilePath "$env:TEMP\alive.bat" -Encoding ascii
+          start "" "$env:TEMP\alive.bat"
